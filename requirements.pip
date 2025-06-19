@@ -1,0 +1,4 @@
+psycopg
+fastapi[standard]
+requests
+pyway

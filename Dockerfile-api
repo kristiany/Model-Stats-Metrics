@@ -1,0 +1,7 @@
+FROM python:3.13.5
+WORKDIR /app
+COPY requirements.pip ./
+RUN pip install -r requirements.pip
+COPY main.py pg.py pipe.py db_migration.sql /app/
+EXPOSE 8080
+CMD [ "fastapi", "run", "main.py", "--port", "80"]

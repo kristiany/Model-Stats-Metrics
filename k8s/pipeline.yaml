@@ -1,0 +1,122 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: etl
+  namespace: default
+spec:
+  schedule: "* * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: etl
+            env:
+              - name: STATS_API_URL
+                value: http://modelapi:80
+            image: etl:v1
+            imagePullPolicy: Never
+            resources:
+              limits:
+                memory: 20Mi
+              requests:
+                memory: 10Mi
+          restartPolicy: OnFailure
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: modelapi
+  namespace: default
+  labels:
+    app: modelapi
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: modelapi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: modelapi
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: modelapi
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: modelapi
+    spec:
+      containers:
+        - image: api:v1
+          env:
+            - name: PG_URL
+              value: postgresql://stats:foobar@statsdatabase:5432/stats
+          imagePullPolicy: Never
+          name: main
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          resources:
+            limits:
+              memory: 200Mi
+              cpu: 1000m
+            requests:
+              memory: 100Mi
+              cpu: 10m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: statsdatabase
+  namespace: default
+  labels:
+    app: statsdatabase
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: statsdatabase
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: statsdatabase
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: statsdatabase
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: statsdatabase
+    spec:
+      containers:
+        - image: postgres:17.5
+          env:
+            - name: POSTGRES_USER
+              value: stats
+            - name: POSTGRES_PASSWORD
+              value: foobar
+            - name: POSTGRES_DB
+              value: stats
+          imagePullPolicy: Always
+          name: main
+          ports:
+          - containerPort: 5432
+            protocol: TCP
+          resources:
+            limits:
+              memory: 200Mi
+              cpu: 1000m
+            requests:
+              memory: 100Mi
+              cpu: 10m
