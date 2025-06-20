@@ -1,25 +1,38 @@
 # Small metrics server for AI model stats
 
-Wanted
+Wanted infra
 ```mermaid
 graph TD;
     ETL-->QUEUE; QUEUE-->Metrics;Metrics-->API;
     Metrics-->PG;
 ```
 
-What's implemented here
+What's implemented here, since I wanted the thing to run locally and in minikube locally.
 ```mermaid
 graph TD;
     ETL-->Metrics;Metrics-->API;
     Metrics-->PG;
 ```
 
+
+
+## Assumptions
+* I focused on stats metrics ingestion, storage and delivery.
+* I wanted a solution that could run in minikube to show the dataflow from one end to the other. 
+* ETL should likely be done with proper tools, here it's simply a script that is run on schedule (once a minute) as a Kubernetes Cronjob.
+* Ingest into a queue, to offload API performance and thread hogging. I didn't want to introduce an external queue at this point, but that would likely be done in production.
+* The exact workings and format of the monitoring queue can be refined to suite any dashboard etc
+* The alerting was done as a very minimal solution, my instinct says it could be a separate service that consumes the queue as well. 
+
+
+What is included?
 * HTTP API to handle incoming metric events
-* HTTP API to get stats with some filters support
+* HTTP API to get stats with some filters support. Response format is pretty raw and could be refined. 
 * Alerting on stats criteria
 * Stored in Postgres
-* Deploy in Kubernetes
+* Deploy in Kubernetes (Minikube, not tested in a real cluster)
 
+Alerting is done in log, but a Dashboard or a Slack integration or similar would be optimal. 
 Example alert
 ```
 ALERT prediction_accuracy lower than 0.3, {'name': 'Mistral', 'version': 'v1', 'prediction_accuracy': 0.19342903578218118, 'drift': 0.11206803927678188, 'inference_time': 12.757847941304057}
